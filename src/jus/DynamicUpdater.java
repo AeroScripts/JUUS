@@ -122,13 +122,15 @@ public class DynamicUpdater {
                     File to = nowrite.contains(file)
                             ? new File(root + file + ".update")
                             : new File(root + file);
-                    progress.current = downloader.download(new URL(baseURL + UPDATE_REMOTE_DIR + needUpdate.get(index).replace("\\", "/")), to, updater);
+                    progress.current = downloader.download(new URL(baseURL + UPDATE_REMOTE_DIR + file.replace("\\", "/")), to, updater);
                     progress.currentFile = file;
                     progress.at = index;
                 } catch (MalformedURLException ex) {
                     result.failed(time, ex);
                 }
                 index++;
+            }else{
+                result.finished(System.currentTimeMillis()-startTime);
             }
         }
 
@@ -143,8 +145,10 @@ public class DynamicUpdater {
     int total = 0;
     String baseURL;
     UpdateResult result;
+    long startTime = 0;
     
     public DynamicUpdater.Progress update(final String baseURL, final UpdateResult result) throws MalformedURLException, IOException, NoSuchAlgorithmException{
+        startTime = System.currentTimeMillis();
         UpdateData remote = (UpdateData) helper.loadClass(new URL(baseURL+UPDATE_REMOTE_HASHLIST).openConnection().getInputStream(), UpdateData.class);
         UpdateData current = getCurrentData();
         this.baseURL = baseURL;
@@ -158,7 +162,11 @@ public class DynamicUpdater {
         total = needUpdate.size();
         progress.count = total;
         if(needUpdate.size()>0){
-            progress.current = downloader.download(new URL(baseURL + UPDATE_REMOTE_DIR + needUpdate.get(0).replace("\\", "/")), new File(root + needUpdate.get(0)), updater);
+            String file = needUpdate.get(0);
+            File to = nowrite.contains(file)
+                    ? new File(root + file + ".update")
+                    : new File(root + file);
+            progress.current = downloader.download(new URL(baseURL + UPDATE_REMOTE_DIR + file.replace("\\", "/")), to, updater);
         }else{
             result.finished(0);
         }
