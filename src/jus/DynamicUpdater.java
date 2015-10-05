@@ -17,6 +17,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 /**
  *
  * @author Aero
@@ -147,28 +149,35 @@ public class DynamicUpdater {
     UpdateResult result;
     long startTime = 0;
     
-    public DynamicUpdater.Progress update(final String baseURL, final UpdateResult result) throws MalformedURLException, IOException, NoSuchAlgorithmException{
-        startTime = System.currentTimeMillis();
-        UpdateData remote = (UpdateData) helper.loadClass(new URL(baseURL+UPDATE_REMOTE_HASHLIST).openConnection().getInputStream(), UpdateData.class);
-        UpdateData current = getCurrentData();
-        this.baseURL = baseURL;
-        this.result = result;
-        needUpdate.clear();
-        for(String file : remote.hashes.keySet()){
-            if(!remote.hashes.get(file).equals(current.hashes.get(file))){
-                needUpdate.add(file);
+    public DynamicUpdater.Progress update(final String baseURL, final UpdateResult result) {
+        try {
+            startTime = System.currentTimeMillis();
+            UpdateData remote = (UpdateData) helper.loadClass(new URL(baseURL+UPDATE_REMOTE_HASHLIST).openConnection().getInputStream(), UpdateData.class);
+            UpdateData current = getCurrentData();
+            this.baseURL = baseURL;
+            this.result = result;
+            needUpdate.clear();
+            for(String file : remote.hashes.keySet()){
+                if(!remote.hashes.get(file).equals(current.hashes.get(file))){
+                    needUpdate.add(file);
+                }
             }
-        }
-        total = needUpdate.size();
-        progress.count = total;
-        if(needUpdate.size()>0){
-            String file = needUpdate.get(0);
-            File to = nowrite.contains(file)
-                    ? new File(root + file + ".update")
-                    : new File(root + file);
-            progress.current = downloader.download(new URL(baseURL + UPDATE_REMOTE_DIR + file.replace("\\", "/")), to, updater);
-        }else{
-            result.finished(0);
+            total = needUpdate.size();
+            progress.count = total;
+            if(needUpdate.size()>0){
+                String file = needUpdate.get(0);
+                File to = nowrite.contains(file)
+                        ? new File(root + file + ".update")
+                        : new File(root + file);
+                progress.current = downloader.download(new URL(baseURL + UPDATE_REMOTE_DIR + file.replace("\\", "/")), to, updater);
+            }else{
+                result.finished(0);
+            }
+            
+        } catch (IOException ex) {
+            result.failed(0, ex);
+        } catch (NoSuchAlgorithmException ex) {
+            result.failed(0, ex);
         }
         return progress;
     }
